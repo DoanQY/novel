@@ -1,0 +1,129 @@
+version: '3.9'
+
+services:
+  novel-mysql:
+    container_name: novel-mysql
+    image: mysql:${MYSQL_VERSION}
+    restart: always
+    hostname: novel-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - "F:/data/mysql/data:/var/lib/mysql"
+#      - "F:/data/mysql/conf:/etc/mysql"
+      - "F:/data/mysql/log:/var/log/mysql"
+      - "F:/data/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql"
+    command: mysqld --max_allowed_packet=100M
+    ports:
+      - "3306:3306"
+    networks:
+      - novelnet
+
+  novel-redis:
+    container_name: novel-redis
+    image: redis:${REDIS_VERSION}
+    restart: always
+    hostname: novel-redis
+    volumes:
+      - "F:/data/redis/data:/data"
+    command: redis-server --save 60 1 --loglevel warning --requirepass "${REDIS_PASSWORD}"
+    ports:
+      - "6379:6379"
+    networks:
+      - novelnet
+
+  novel-rabbitmq:
+    container_name: novel-rabbitmq
+    image: rabbitmq:${RABBITMQ_VERSION}
+#    image: rabbitmq:3.9-management
+#    restart: always
+    hostname: novel-rabbitmq
+#    environment:
+#      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+#      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+#      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - "F:/data/rabbitmq/data:/var/lib/rabbitmq"
+#      - "F:/data/rabbitmq/log:/var/log/rabbitmq"
+    networks:
+      - novelnet
+
+#  用于设置Elasticsearch和Kibana的安全配置
+#  (等待 Elasticsearch 可用后，通过调用 Elasticsearch 的 REST API 设置 kibana_system 用户的密码。
+#  这个步骤是为了确保在启动 Kibana 之前，Elasticsearch 的安全设置已经完成。
+  novel-elasticsearch-setup:
+    container_name: novel-elasticsearch-setup
+    image: elasticsearch:${ELASTIC_VERSION}
+    hostname: novel-elasticsearch-setup
+    user: "0"
+    command: >
+      bash -c '
+        echo "Waiting for Elasticsearch availability";
+        until curl -s http://novel-elasticsearch:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
+        echo "Setting kibana_system password";
+        until curl -s -X POST -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" http://novel-elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
+        echo "All done!";
+      '
+    networks:
+      - novelnet
+
+  novel-elasticsearch:
+    container_name: novel-elasticsearch
+    image: elasticsearch:${ELASTIC_VERSION}
+    restart: always
+    hostname: novel-elasticsearch
+    environment:
+      - "ES_JAVA_OPTS=-Xms125m -Xmx512m" #设置使用jvm内存大小
+      - discovery.type=single-node #以单一节点模式启动
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+      - xpack.security.http.ssl.enabled=false
+    ports:
+      - "9200:9200"
+    depends_on:
+      - novel-elasticsearch-setup
+    volumes:
+      - "F:/data/elasticsearch/plugins:/usr/share/elasticsearch/plugins" #插件文件挂载
+      - "F:/data/elasticsearch/data:/usr/share/elasticsearch/data" #数据文件挂载
+    networks:
+      - novelnet
+
+  novel-kibana:
+    container_name: novel-kibana
+    image: kibana:${KIBANA_VERSION}
+    restart: always
+    hostname: novel-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://novel-elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+    ports:
+      - "5601:5601"
+    depends_on:
+      - novel-elasticsearch
+    networks:
+      - novelnet
+
+  novel-xxl-job-admin:
+    container_name: novel-xxl-job-admin
+    image: xuxueli/xxl-job-admin:${XXLJOB_VERSION}
+    restart: always
+    hostname: novel-xxl-job-admin
+    environment:
+      - PARAMS=--spring.datasource.url=jdbc:mysql://novel-mysql:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai --spring.datasource.username=root --spring.datasource.password=${MYSQL_ROOT_PASSWORD} --xxl.job.accessToken=${XXLJOB_ACCESSTOKEN}
+      - JAVA_OPTS=-Xmx512m
+    volumes:
+      - "F:/data/xxl-job-admin/data/applogs:/data/applogs"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - novel-mysql
+    networks:
+      - novelnet
+
+networks:
+  novelnet:
+    driver: bridge
