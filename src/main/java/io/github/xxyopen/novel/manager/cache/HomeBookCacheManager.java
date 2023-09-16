@@ -34,6 +34,10 @@ public class HomeBookCacheManager {
 
     /**
      * 查询首页小说推荐，并放入缓存中
+     * '@Cacheable': 开启方法级别的缓存，并对方法的返回值进行缓存
+     * 'cacheManager': 指定缓存管理器
+     * 'value': 指定缓存名称
+     * 告诉Spring框架在调用带有该注解的方法时，首先检查缓存中是否已经存在该方法的结果。如果缓存中存在，则直接返回缓存中的结果，而不会执行方法体；如果缓存中不存在，则执行方法体，并将方法的结果存储到缓存中以供后续使用
      */
     @Cacheable(cacheManager = CacheConsts.CAFFEINE_CACHE_MANAGER,
         value = CacheConsts.HOME_BOOK_CACHE_NAME)

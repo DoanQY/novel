@@ -19,6 +19,7 @@ public class CommonExceptionHandler {
 
     /**
      * 处理数据校验异常
+     * BindException.class 用于处理 @RequestBody 参数校验异常
      */
     @ExceptionHandler(BindException.class)
     public RestResp<Void> handlerBindException(BindException e) {

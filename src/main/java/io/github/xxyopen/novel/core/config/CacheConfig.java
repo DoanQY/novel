@@ -30,8 +30,8 @@ public class CacheConfig {
     /**
      * Caffeine 缓存管理器
      */
-    @Bean
-    @Primary
+    @Bean // 该方法返回一个bean
+    @Primary // 优先使用这个缓存管理器
     public CacheManager caffeineCacheManager() {
         SimpleCacheManager cacheManager = new SimpleCacheManager();
 
@@ -39,6 +39,7 @@ public class CacheConfig {
         // 类型推断 var 非常适合 for 循环，JDK 10 引入，JDK 11 改进
         for (var c : CacheConsts.CacheEnum.values()) {
             if (c.isLocal()) {
+                // recordStats() 开启统计功能, 如命中次数、缺失次数、加载次数、回收次数等
                 Caffeine<Object, Object> caffeine = Caffeine.newBuilder().recordStats()
                     .maximumSize(c.getMaxSize());
                 if (c.getTtl() > 0) {
@@ -57,15 +58,16 @@ public class CacheConfig {
      */
     @Bean
     public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
+        // 非锁定的 Redis 缓存写入器，多个线程可以同时进行缓存写入操作，而不会出现锁定问题
         RedisCacheWriter redisCacheWriter = RedisCacheWriter.nonLockingRedisCacheWriter(
             connectionFactory);
-
+        // 默认配置，过期时间 0 表示永不过期
         RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
-            .disableCachingNullValues().prefixCacheNameWith(CacheConsts.REDIS_CACHE_PREFIX);
+            .disableCachingNullValues().prefixCacheNameWith(CacheConsts.REDIS_CACHE_PREFIX); // 禁用了对空值的缓存并设置了缓存的前缀
 
         Map<String, RedisCacheConfiguration> cacheMap = new LinkedHashMap<>(
             CacheConsts.CacheEnum.values().length);
-        // 类型推断 var 非常适合 for 循环，JDK 10 引入，JDK 11 改进
+
         for (var c : CacheConsts.CacheEnum.values()) {
             if (c.isRemote()) {
                 if (c.getTtl() > 0) {
@@ -83,7 +85,9 @@ public class CacheConfig {
 
         RedisCacheManager redisCacheManager = new RedisCacheManager(redisCacheWriter,
             defaultCacheConfig, cacheMap);
+        // 设置了redisCacheManager是否具有事务感知能力，如果启用事务，则缓存的清除将延迟到事务提交时
         redisCacheManager.setTransactionAware(true);
+        // 对缓存管理器进行初始化
         redisCacheManager.initializeCaches();
         return redisCacheManager;
     }

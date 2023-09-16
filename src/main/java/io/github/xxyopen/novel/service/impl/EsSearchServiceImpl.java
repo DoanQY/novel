@@ -55,7 +55,7 @@ public class EsSearchServiceImpl implements SearchService {
                 // 排序
                 if (!StringUtils.isBlank(condition.getSort())) {
                     searchBuilder.sort(o -> o.field(f -> f
-                        .field(StringUtils.underlineToCamel(condition.getSort().split(" ")[0]))
+                        .field(StringUtils.underlineToCamel(condition.getSort().split(" ")[0])) // 排序字段
                         .order(SortOrder.Desc))
                     );
                 }

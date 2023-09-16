@@ -62,13 +62,13 @@ public class BookToEsTask {
                 BulkRequest.Builder br = new BulkRequest.Builder();
 
                 for (BookInfo book : bookInfos) {
-                    br.operations(op -> op
+                    br.operations(op -> op // 批量操作
                         .index(idx -> idx
-                            .index(EsConsts.BookIndex.INDEX_NAME)
+                            .index(EsConsts.BookIndex.INDEX_NAME) // 索引名，相当于数据库名
                             .id(book.getId().toString())
-                            .document(EsBookDto.build(book))
+                            .document(EsBookDto.build(book)) // 相当于表中的一行数据
                         )
-                    ).timeout(Time.of(t -> t.time("10s")));
+                    ).timeout(Time.of(t -> t.time("10s"))); // 请求超时时间
                     maxId = book.getId();
                 }
 

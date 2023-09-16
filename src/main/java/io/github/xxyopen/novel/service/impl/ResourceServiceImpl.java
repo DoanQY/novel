@@ -40,6 +40,7 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     public RestResp<ImgVerifyCodeRespDto> getImgVerifyCode() throws IOException {
+        // 生成一个32位的随机字符串作为会话ID
         String sessionId = IdWorker.get32UUID();
         return RestResp.ok(ImgVerifyCodeRespDto.builder()
             .sessionId(sessionId)

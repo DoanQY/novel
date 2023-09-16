@@ -21,10 +21,15 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class VerifyCodeManager {
 
+    /**
+     * 对 RedisTemplate的特化，专门处理String类型的数据。
+     */
     private final StringRedisTemplate stringRedisTemplate;
 
     /**
      * 生成图形验证码，并放入 Redis 中
+     * 存储图片验证码和其对应的会话ID到Redis中，并设置了该键值对的过期时间为5分钟
+     * @param sessionId 会话ID, 用于标识该验证码属于哪个浏览器会话
      */
     public String genImgVerifyCode(String sessionId) throws IOException {
         String verifyCode = ImgVerifyCodeUtils.getRandomVerifyCode(4);

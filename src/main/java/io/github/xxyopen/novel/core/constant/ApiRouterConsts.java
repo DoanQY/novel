@@ -38,7 +38,7 @@ public class ApiRouterConsts {
     public static final String HOME_URL_PREFIX = "/home";
 
     /**
-     * 首页模块请求路径前缀
+     * 新闻模块请求路径前缀
      */
     public static final String NEWS_URL_PREFIX = "/news";
 

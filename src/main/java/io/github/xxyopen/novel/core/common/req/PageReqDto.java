@@ -9,7 +9,7 @@ import lombok.Data;
  * @author xiongxiaoyang
  * @date 2022/5/11
  */
-@Data
+@Data // 自动生成 toString(), equals(), hashCode(), 和 getter/setter 方法
 public class PageReqDto {
 
     /**

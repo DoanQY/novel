@@ -15,10 +15,11 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * @date 2022/5/25
  */
 @Component
+// 自动为标记了final或@NonNull注解的字段生成一个构造函数，自动生成的构造函数会自动注入相关的字段
 @RequiredArgsConstructor
 public class AmqpMsgManager {
 
-    private final AmqpTemplate amqpTemplate;
+    private final AmqpTemplate amqpTemplate; // 会在构造函数中自动注入
 
     @Value("${spring.amqp.enabled:false}")
     private boolean amqpEnabled;
@@ -45,6 +46,10 @@ public class AmqpMsgManager {
                 });
             return;
         }
+        /* exchange：交换机名称，用于指定消息的发送目的地
+         * routingKey：路由键，用于指定消息的路由规则，交换机根据路由键的值，将消息发送到符合匹配规则的队列中
+         * message：发送的消息
+         */
         amqpTemplate.convertAndSend(exchange, routingKey, message);
     }
 
